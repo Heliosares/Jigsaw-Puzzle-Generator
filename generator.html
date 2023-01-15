@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+   <meta charset="UTF-8">
+   <title>Jigsaw puzzle</title>
+   <script type="text/javascript">
+      function save(filename, data)
+      {
+         var blob = new Blob([data], {type: "text/csv"});
+         if (window.navigator.msSaveOrOpenBlob)
+         {
+            window.navigator.msSaveBlob(blob, filename);
+         }
+         else
+         {
+            var elem = window.document.createElement('a');
+            elem.href = window.URL.createObjectURL(blob);
+            elem.download = filename;        
+            document.body.appendChild(elem);
+            elem.click();        
+            document.body.removeChild(elem);
+         }
+      }
+   
+      var seed = 1;
+      function random() { var x = Math.sin(seed) * 10000; seed += 1; return x - Math.floor(x); }
+      function uniform(min, max) { var r = random(); return min + r * (max - min); }
+      function rbool() { return random() > 0.5; }
+      
+      function $(id) { return document.getElementById(id); }
+
+      function randomseed()     { $("seed").value = Math.floor(Math.random() * 10000); updateseed(); }
+      function updateseed()     { $("_seed").value =    $("seed").value;          update(); }
+      function updatetabsize()  { $("_tabsize").value = $("tabsize").value + "%"; update(); }
+      function updatejitter()   { $("_jitter").value =  $("jitter").value + "%";  update(); }
+      function update_seed()    { var val = parseFloat($("_seed").value);    if (!isNaN(val)) { $("seed").value = val; }    updateseed(); }
+      function update_tabsize() { var val = parseFloat($("_tabsize").value); if (!isNaN(val)) { $("tabsize").value = val; } updatetabsize(); }
+      function update_jitter()  { var val = parseFloat($("_jitter").value);  if (!isNaN(val)) { $("jitter").value = val; }  updatejitter(); }
+      
+      var a, b, c, d, e, t, j, flip, xi, yi, xn, yn, vertical, offset, width, heigth;
+      function first() { e = uniform(-j, j); next();}
+      function next()  { var flipold = flip; flip = rbool(); a = (flip == flipold ? -e: e); b = uniform(-j, j); c = uniform(-j, j); d = uniform(-j, j); e = uniform(-j, j);}
+      function sl()  { return vertical ? height / yn : width / xn; }
+      function sw()  { return vertical ? width / xn : height / yn;}
+      function ol()  { return offset + sl() * (vertical ? yi : xi); }
+      function ow()  { return offset + sw() * (vertical ? xi : yi); }
+      function l(v)  { var ret = ol() + sl() * v; return Math.round(ret * 100) / 100; }
+      function w(v)  { var ret = ow() + sw() * v * (flip ? -1.0 : 1.0); return Math.round(ret * 100) / 100; }
+      function p0l() { return l(0.0); }
+      function p0w() { return w(0.0); }
+      function p1l() { return l(0.2); }
+      function p1w() { return w(a); }
+      function p2l() { return l(0.5 + b + d); }
+      function p2w() { return w(-t + c); }
+      function p3l() { return l(0.5 - t + b); }
+      function p3w() { return w(t + c); }
+      function p4l() { return l(0.5 - 2.0 * t + b - d); }
+      function p4w() { return w(3.0 * t + c); }
+      function p5l() { return l(0.5 + 2.0 * t + b - d); }
+      function p5w() { return w(3.0 * t + c); }
+      function p6l() { return l(0.5 + t + b); }
+      function p6w() { return w(t + c); }
+      function p7l() { return l(0.5 + b + d); }
+      function p7w() { return w(-t + c); }
+      function p8l() { return l(0.8); }
+      function p8w() { return w(e); }
+      function p9l() { return l(1.0); }
+      function p9w() { return w(0.0); }
+
+      function gen_d()
+      {
+         var str = "";
+         
+         seed = parseInt($("seed").value);
+         t = parseFloat($("tabsize").value) / 200.0;
+         j = parseFloat($("jitter").value) / 100.0;
+         xn = parseInt($("xn").value);
+         yn = parseInt($("yn").value);
+		 $("piecesum").textContent = xn * yn
+         
+         vertical = 0;
+         for (yi = 1; yi < yn; ++yi)
+         {
+            xi = 0;
+            first();
+            str += "M" + p0l() + "," + p0w() + " ";
+            for (; xi < xn; ++xi)
+            {
+               str += "C" + p1l() + "," + p1w() + " " + p2l() + "," + p2w() + " " + p3l() + "," + p3w() + " ";
+               str += "C" + p4l() + "," + p4w() + " " + p5l() + "," + p5w() + " " + p6l() + "," + p6w() + " ";
+               str += "C" + p7l() + "," + p7w() + " " + p8l() + "," + p8w() + " " + p9l() + "," + p9w() + " ";
+               next();
+            }
+         }
+         
+         vertical = 1;
+         for (xi = 1; xi < xn; ++xi)
+         {
+            yi = 0;
+            first();
+            str += "M" + p0w() + "," + p0l() + " ";
+            for (; yi < yn; ++yi)
+            {
+               str += "C" + p1w() + "," + p1l() + " " + p2w() + "," + p2l() + " " + p3w() + "," + p3l() + " ";
+               str += "C" + p4w() + "," + p4l() + " " + p5w() + "," + p5l() + " " + p6w() + "," + p6l() + " ";
+               str += "C" + p7w() + "," + p7l() + " " + p8w() + "," + p8l() + " " + p9w() + "," + p9l() + " ";
+               next();
+            }
+         }
+         
+         str += "M" + offset + "," + offset + " "
+         str += "L" + (offset + width) + "," + offset + " "
+         str += "L" + (offset + width) + "," + (offset + height) + " "
+         str += "L" + offset + "," + (offset + height) + " "
+         str += "L" + offset + "," + offset + " ";
+
+         return str;
+      }
+      
+      function update()
+      {
+         width = parseInt($("width").value);
+         height = parseInt($("height").value);
+         var ratio = 1.0 * width / height;
+         if (ratio > 1.5)
+         {
+            width = 900;
+            height = width / ratio;
+         }
+         else
+         {
+            height = 600;
+            width = height * ratio;
+         }
+         $("puzzlecontainer").setAttribute("width", width + 11);
+         $("puzzlecontainer").setAttribute("height", height + 11);
+         offset = 5.5;
+         $("puzzlepath").setAttribute("d", gen_d());
+      }
+      
+      function generate()
+      {
+         width = parseInt($("width").value);
+         height = parseInt($("height").value);
+         offset = 0.0;
+
+         var data = "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.0\" ";
+         data += "width=\"" + width + "mm\" height=\"" + height + "mm\" viewBox=\"0 0 " + width + " " + height + "\">";
+         data += "<path fill=\"none\" stroke=\"black\" stroke-width=\"0.1\" d=\"";
+         data += gen_d();
+         data += "\"></path></svg>";
+         
+         save("jigsaw.svg", data);
+      }
+   </script>
+</head>
+
+<body onload="randomseed();">
+   <table>
+      <tbody><tr>
+         <td>Seed:</td>
+         <td><input id="_seed" type="text" value="5430" onchange="update_seed()"></td>
+         <td><input id="seed" type="range" value="5430" min="0" max="9999" step="1" onchange="updateseed()"></td>
+		 <td><button onclick="randomseed()">Random</button></td>
+      </tr>
+      <tr>
+         <td>Tab Size:</td>
+         <td><input id="_tabsize" type="text" value="24.2%" onchange="update_tabsize()"></td>
+         <td><input id="tabsize" type="range" value="24.2" min="10" max="30" step="0.1" onchange="updatetabsize()"></td>
+      </tr>
+      <tr>
+         <td>Jitter:</td>
+         <td><input id="_jitter" type="text" value="5.2%" onchange="update_jitter()"></td>
+         <td><input id="jitter" type="range" value="5.2" min="0" max="13" step="0.1" onchange="updatejitter()"></td>
+      </tr>
+      <tr>
+         <td>Tiles:</td>
+         <td><input id="xn" type="text" value="3" size="4" onchange="update()"> x <input id="yn" type="text" value="3" size="4" onchange="update()"></td>
+         <td>= <span id="piecesum">9</span> pieces.</td>
+      </tr>
+      <tr>
+         <td>Size:</td>
+         <td><input id="width" type="text" value="100" size="4" onchange="update()"> x <input id="height" type="text" value="100" size="4" onchange="update()"> mm</td>
+         <td><button onclick="generate()">Download SVG</button></td>
+      </tr>
+   </tbody></table>
+   <svg id="puzzlecontainer" width="611" height="611"><path id="puzzlepath" fill="none" stroke="black" d="M5.5,205.5 C45.5,206.72 103.89,173.35 86.27,221.75 C68.65,270.15 165.45,270.15 134.67,221.75 C103.89,173.35 165.5,214.73 205.5,205.5 C245.5,196.27 311.51,233.47 289.48,185.07 C267.45,136.67 364.25,136.67 337.88,185.07 C311.51,233.47 365.5,213.39 405.5,205.5 C445.5,197.61 507.48,226.26 476.16,177.86 C444.84,129.46 541.64,129.46 524.56,177.86 C507.48,226.26 565.5,211.59 605.5,205.5 M5.5,405.5 C45.5,398.77 115.4,436.57 86.64,388.17 C57.88,339.77 154.68,339.77 135.04,388.17 C115.4,436.57 165.5,407.76 205.5,405.5 C245.5,403.24 303.9,422.42 273.1,374.02 C242.3,325.62 339.1,325.62 321.5,374.02 C303.9,422.42 365.5,413.8 405.5,405.5 C445.5,397.2 497.57,420.28 473.39,371.88 C449.22,323.48 546.02,323.48 521.79,371.88 C497.57,420.28 565.5,405.51 605.5,405.5 M205.5,5.5 C198.15,45.5 227.58,96.56 179.18,81.24 C130.78,65.92 130.78,162.72 179.18,129.64 C227.58,96.56 212.32,165.5 205.5,205.5 C198.68,245.5 233.41,314.42 185.01,285.8 C136.61,257.18 136.61,353.98 185.01,334.2 C233.41,314.42 195.56,365.5 205.5,405.5 C215.44,445.5 174.21,498.17 222.61,478.23 C271.01,458.28 271.01,555.08 222.61,526.63 C174.21,498.17 206.93,565.5 205.5,605.5 M405.5,5.5 C396.59,45.5 373.39,102.67 421.79,76.4 C470.19,50.13 470.19,146.93 421.79,124.8 C373.39,102.67 406.02,165.5 405.5,205.5 C404.98,245.5 391.02,317.44 439.42,284.19 C487.82,250.94 487.82,347.74 439.42,332.59 C391.02,317.44 403.74,365.5 405.5,405.5 C407.26,445.5 390.18,497.64 438.58,475.72 C486.98,453.8 486.98,550.6 438.58,524.12 C390.18,497.64 395.23,565.5 405.5,605.5 M5.5,5.5 L605.5,5.5 L605.5,605.5 L5.5,605.5 L5.5,5.5 "></path></svg>
+
+
+ </body></html>
